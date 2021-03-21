@@ -1,0 +1,564 @@
+% $Id$
+\documentclass[11pt]{article}
+
+% DEFAULT PACKAGE SETUP
+
+\usepackage{setspace,graphicx,epstopdf,amsmath,amsfonts,amssymb,amsthm,versionPO}
+\usepackage{marginnote,datetime,enumitem,subfigure,rotating,fancyvrb}
+\usepackage{hyperref,float}
+\usepackage[longnamesfirst]{natbib}
+\usepackage{longtable}
+\usepackage{lipsum}
+\usepackage{booktabs}
+\usepackage{afterpage,lscape}
+\usdate
+
+% These next lines allow including or excluding different versions of text
+% using versionPO.sty
+
+\excludeversion{notes}		% Include notes?
+\includeversion{links}          % Turn hyperlinks on?
+
+% Turn off hyperlinking if links is excluded
+\iflinks{}{\hypersetup{draft=true}}
+
+% Notes options
+\ifnotes{%
+\usepackage[margin=1in,paperwidth=10in,right=2.5in]{geometry}%
+\usepackage[textwidth=1.4in,shadow,colorinlistoftodos]{todonotes}%
+}{%
+\usepackage[margin=1in]{geometry}%
+\usepackage[disable]{todonotes}%
+}
+
+% Allow todonotes inside footnotes without blowing up LaTeX
+% Next command works but now notes can overlap. Instead, we'll define 
+% a special footnote note command that performs this redefinition.
+%\renewcommand{\marginpar}{\marginnote}%
+
+% Save original definition of \marginpar
+\let\oldmarginpar\marginpar
+
+% Workaround for todonotes problem with natbib (To Do list title comes out wrong)
+\makeatletter\let\chapter\@undefined\makeatother % Undefine \chapter for todonotes
+
+% Define note commands
+\newcommand{\smalltodo}[2][] {\todo[caption={#2}, size=\scriptsize, fancyline, #1] {\begin{spacing}{.5}#2\end{spacing}}}
+\newcommand{\rhs}[2][]{\smalltodo[color=green!30,#1]{{\bf RS:} #2}}
+\newcommand{\rhsnolist}[2][]{\smalltodo[nolist,color=green!30,#1]{{\bf RS:} #2}}
+\newcommand{\rhsfn}[2][]{%  To be used in footnotes (and in floats)
+\renewcommand{\marginpar}{\marginnote}%
+\smalltodo[color=green!30,#1]{{\bf RS:} #2}%
+\renewcommand{\marginpar}{\oldmarginpar}}
+%\newcommand{\textnote}[1]{\ifnotes{{\noindent\color{red}#1}}{}}
+\newcommand{\textnote}[1]{\ifnotes{{\colorbox{yellow}{{\color{red}#1}}}}{}}
+
+% Command to start a new page, starting on odd-numbered page if twoside option 
+% is selected above
+\newcommand{\clearRHS}{\clearpage\thispagestyle{empty}\cleardoublepage\thispagestyle{plain}}
+
+% Number paragraphs and subparagraphs and include them in TOC
+\setcounter{tocdepth}{2}
+
+% JF-specific includes:
+
+\usepackage{indentfirst} % Indent first sentence of a new section.
+\usepackage{endnotes}    % Use endnotes instead of footnotes
+\usepackage{jf}          % JF-specific formatting of sections, etc.
+\usepackage[labelfont=bf,labelsep=period, font=small]{caption}   % Format figure captions
+\captionsetup[table]{labelsep=none}
+
+\usepackage{sidecap} %to put caption on side of the table
+
+% Define theorem-like commands and a few random function names.
+\newtheorem{condition}{CONDITION}
+\newtheorem{corollary}{COROLLARY}
+\newtheorem{proposition}{PROPOSITION}
+\newtheorem{obs}{OBSERVATION}
+\newcommand{\argmax}{\mathop{\rm arg\,max}}
+\newcommand{\sign}{\mathop{\rm sign}}
+\newcommand{\defeq}{\stackrel{\rm def}{=}}
+
+\title{\Large \bf Ph.D. Seminar in Asset Pricing: MFIN8863 \\
+Replication Exercise-2}
+\author{Submitted by: Adarsh Kuthuru\\
+Team members: Levon Barsegian, Xiang Li}
+\date{\parbox{\linewidth}{\centering%
+  \today\endgraf\bigskip
+  \endgraf\medskip
+  PhD Students in Finance \endgraf
+  Boston College, United States}}
+  
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\bigskip
+\clearpage
+\tableofcontents
+
+\setlist{noitemsep}  % Reduce space between list items (itemize, enumerate, etc.)
+\onehalfspacing      % Use 1.5 spacing
+% Use endnotes instead of footnotes - redefine \footnote command
+\renewcommand{\footnote}{\endnote}  % Endnotes instead of footnotes
+
+\clearpage
+
+
+% Create title page with no page number
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    Paper-1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{\cite{demiguel2009optimal}} \label{sec:De}
+
+\subsection{Introduction}
+ This paper compares the out-of-sample performance of various strategies based on the mean-variance model with the naive 1/N portfolio strategy in the presence of estimation errors. In this replication assignment, I focus on Sharpe ratio of sample-based mean-variance portfolio, and out-of-sample Sharpe ratios of minimum-variance portfolio, value-weighted portfolio implied by the market model, portfolio implied by asset pricing models with unobservable factors (Mackinlay and Pastor (2000)). 
+
+
+\subsection{Data description}
+
+\begin{table}[H] \label{table:data1}
+\centering
+\caption {: List of Datasets Considered} 
+\caption*{This table lists the various datasets analyzed; the number of risky assets N in each dataset, where
+the number after the “+” indicates the number of factor portfolios available; and the time period
+spanned. Each dataset contains monthly excess returns over the 90-day nominal US T-bill (from
+Ken French’s web site). In the last column is the abbreviation used to refer to the dataset in the
+tables evaluating the performance of the various portfolio strategies. Note that as in Wang (2005),
+of the 25 size- and book-to-market-sorted portfolios we exclude the five portfolios containing the
+largest firms, because the market, SMB, and HML are almost a linear combination of the 25 Fama-
+French portfolios. Note also that in Datasets #4 and 5, the only difference is in the factor
+portfolios that are available: in Dataset #4, it is the U.S. equity market portfolio (MKT); and in Dataset #5, they are the MKT,
+SMB, HML, and UMD portfolios.}
+\begin{tabular}{ccccc}
+\hline$\#$ & \multicolumn{1}{c} { Dataset and source } & $N$ & Time Period & Abbreviation \\
+\hline & & & & & \\
+1 & Ten sector portfolios of the S\&P500 and & $10+1$ & $01 / 1981-12 / 2002$ & S\&P Sectors \\
+& the U.S. equity market portfolio & & & & \\
+& Source: Roberto Wessels & & & & \\
+2 & Ten industry portfolios and  & $10+1$ & $07 / 1963-11 / 2004$ & Industry \\
+& the U.S. equity market portfolio & & & & \\
+& Ken French’s web site & & & & \\
+3 & SMB and HML portfolios and & $2+1$ & $07 / 1963-11 / 2004$ & MKT/SMB/HML \\
+& the U.S. equity market portfolio & & & & \\
+& Ken French’s web site & & & & \\
+4 & Twenty Size and Book-to-Market portfolios and & $20+1$ & $07 / 1963-11 / 2004$ & FF-1-factor \\
+& the U.S. equity market portfolio (MKT) & & & & \\
+& Ken French’s web site & & & & \\
+5 & Twenty Size and Book-to-Market portfolios and & $20+4$ & $07 / 1963-11 / 2004$ & FF-4-factor \\
+& the MKT, SMB, HML, \& UMD portfolios & & & & \\
+& Ken French’s web site & & & & \\
+\end{tabular}
+\end{table}
+
+
+\subsection{Methodology}
+
+$R_{t}$ denotes the vector of excess returns 
+over the risk-free asset on the $N$ risky assets available for investment at time $t$. The vector $\mu_{t}$ ($N \times 1$) is used to denote the expected returns on the risky assets, and $\Sigma_{t}$ to denote the corresponding $N \times N$ variance-covariance matrix of returns. $T$ is the duration of the data series. $1_{N}$ is an $N$ -dimensional vector of ones, and $I_{N}$ is an $N \times N$ identity matrix. $\mathrm{x}_{t}$ is the vector of portfolio weights invested in the risky assets, with $1-\mathbf{1}_{N}^{\top} \mathrm{x}_{t}$ invested in the risk-free asset, and the vector of relative weights in the portfolio with only-risky assets is
+
+\begin{equation} \label{eq:eq1}
+\mathrm{w}_{t}=\frac{\mathrm{x}_{t}}{\left|\mathbf{1}_{N}^{\top} \mathrm{x}_{t}\right|}
+\end{equation}
+
+In order to compare different strategies, we consider an investor whose preferences are fully described by the mean and variance of a chosen portfolio, $\mathrm{x}_{t} .$ At each time $t$ the decision-maker selects $\mathrm{x}_{t},$ to maximize expected utility: 
+
+\begin{equation} \label{eq:eq2}
+\max _{\mathrm{X}_{t}} \mathrm{x}_{t}^{\top} \mu_{t}-\frac{\gamma}{2} \mathrm{x}_{t}^{\top} \Sigma_{t} \mathrm{x}_{t}
+\end{equation}
+
+here $\gamma$ is the investor's risk aversion. The solution of the above optimization is $\mathrm{x}_{t}=(1 / \gamma) \Sigma_{t}^{-1} \mu .$ The vector of relative portfolio weights invested in the $N$ risky
+assets at time $t$ is
+
+\begin{equation} \label{eq:eq3}
+\mathrm{w}_{t}=\frac{\Sigma_{t}^{-1} \mu_{t}}{1_{N} \Sigma_{t}^{-1} \mu_{t}}
+\end{equation}
+
+\subsubsection{Naive portfolio (“ew” or “1/N”)}
+The naive strategy has equal  weight $\mathrm{w}_{t}^{ew}$= 1/N in each
+of the N risky assets. This strategy implies that expected returns are proportional to
+total risk rather than systematic risk.
+
+\subsubsection{Sample-based mean-variance portfolio (“mv”)}
+This follows the mean-variance model of Markowitz (1952), wherein the investor optimizes the trade-off between
+the mean and variance of portfolio returns. Here, we solve eq. (\ref{eq:eq2}) with the mean and covariance matrix
+of asset returns replaced by their in-sample counterparts. We shall refer to
+this strategy as the “sample-based mean-variance portfolio.” This portfolio strategy
+completely ignores the possibility of estimation error.
+
+\subsubsection{Minimum-variance portfolio (“min”)}
+This strategy chooses the portfolio of risky assets that minimizes the variance of
+returns; 
+$$
+\min _{W_{t}} w_{t}^{\top} \Sigma_{t} w_{t}, \quad \text { s.t. } \quad 1_{N}^{\top} w_{t}=1
+$$
+Here, only the estimates of the covariance matrix of asset returns are used and estimates of the expected returns are completely ignored. This strategy does not fall into the structure of mean-variance expected utility.
+
+\subsubsection{Value-weighted portfolio implied by the Market Model ("vw")}
+The optimal strategy in a CAPM world is the value-weighted market portfolio. This is similar to equal weighted strategy but the weights are replaced with market capitalizations.
+
+
+\subsubsection{Portfolio implied by asset-pricing models with unobservable factors ("mp")}
+MacKinlay and Pastor (2000) show that if returns are explained by factors and some are unobserved, then the pricing error information is contained in the covariance matrix of the residuals. This logic is used to construct an estimator of expected returns that is more reliable than estimators obtained using conventional methods. MacKinlay and Pastor show that, in this case, the covariance matrix of returns takes the following form: ${ }^{12}$
+$$
+\Sigma=\nu \mu \mu^{\top}+\sigma^{2} I_{N}
+$$
+in which $\nu$ and $\sigma^{2}$ are positive scalars. They use the maximum-likelihood estimates of $\nu, \sigma^{2}$, and $\mu$ to derive the corresponding estimates of the mean and covariance matrix of asset returns. The optimal portfolio weights are obtained by substituting these estimates into eq. (\ref{eq:eq2}).
+
+\subsubsection{Estimation of Sharpe ratios:}
+In order to compute the in-sample Sharpe ratio for each strategy $k$, the below formula is used
+
+\begin{equation} \label{eq:eq4}
+\widehat{\mathrm{SR}_{k}}=\frac{\operatorname{Mean}_{k}}{\operatorname{Std}_{k}}=\frac{\hat{\mu}_{k^{\top}} \hat{\mathrm{w}}_{k}}{\sqrt{\hat{\mathrm{w}}_{k}^{\top} \hat{\Sigma}_{k}} \hat{\mathrm{w}}_{k}}
+\end{equation}
+
+in which $\hat{\mu}_{k}$ and $\hat{\Sigma}_{k}$ are the in-sample mean and variance estimates and $\hat{\mathrm{w}}_{k}$ is the portfolio obtained with these estimates.
+
+\subsubsection{Estimation of standard errors:}
+Jobson and Korkie (1981) methodology was employed to estimate the standard errors. Below is the formula to estimate the same.
+
+Given two portfolios $i$ and $n,$ with $\hat{\mu}_{i}, \hat{\mu}_{n}, \hat{\sigma}_{i}, \hat{\sigma}_{n}, \hat{\sigma}_{i, n}$ as their estimated means, variances, and covariances over a sample of size $T-M,$ the test of the hypothesis $\mathrm{H}_{0}: \hat{\mu}_{i} / \hat{\sigma}_{i}-\hat{\mu}_{n} / \hat{\sigma}_{n}=0$ is obtained via the test statistic $\hat{z}_{\mathrm{JK}},$ which is asymptotically distributed as a standard Normal:
+
+\begin{equation} \label{eq:eq5}
+\hat{z}_{\mathrm{JK}}=\frac{\hat{\sigma}_{n} \hat{\mu}_{i}-\hat{\sigma}_{i} \hat{\mu}_{n}}{\sqrt{\hat{\vartheta}}}, \text { with } \hat{\vartheta}=\frac{1}{T-M}\left(2 \hat{\sigma}_{i}^{2} \hat{\sigma}_{n}^{2}-2 \hat{\sigma}_{i} \hat{\sigma}_{n} \hat{\sigma}_{i, n}+\frac{1}{2} \hat{\mu}_{i}^{2} \hat{\sigma}_{n}^{2}+\frac{1}{2} \hat{\mu}_{n}^{2} \hat{\sigma}_{i}^{2}-\frac{\hat{\mu}_{i} \hat{\mu}_{n}}{\hat{\sigma}_{i} \hat{\sigma}_{n}} \hat{\sigma}_{i, n}^{2}\right)
+\end{equation}
+
+Note that this statistic holds asymptotically under the assumption that returns are distributed independently and identically (IID) over time with a Normal distribution.
+
+
+\subsection{Results}
+
+\begin{table}[H]
+\centering
+\caption {: Sharpe Ratios for Empirical Data} \label{tab:table1} \\
+\caption*{For each of the empirical datasets listed in Table 2, this table reports the monthly Sharpe ratio for
+the 1/N strategy, the in-sample Sharpe ratio of the mean-variance strategy, and the out-of-sample
+Sharpe ratios for the strategies from the models of optimal asset allocation listed in Table 1 of DeMiguel et al. (2006). In
+parentheses is the P-value of the difference between the Sharpe ratio of each strategy from that of the
+1/N benchmark, which is computed using the Jobson and Korkie (1981) methodology. The results for the “FF-3-factor” dataset are not reported because these are very similar
+to those for the “FF-1-factor” dataset. }
+
+
+
+\begin{tabular}{cccccc}
+  \hline
+ Strategy & S\&P sectors & Industry portfolio & MKT/SMB/HML & FF-1 Factor & FF-4 Factor \\ 
+  & N=11 & N=11 & N=3 & N=21 & N=24 \\
+  \hline
+1/N & 0.14 & 0.08 & 0.08 & 0.14 & 0.19 \\ 
+  mv (in sample) & 0.26 & 0.44 & 0.15 & 0.24 & 0.35 \\ 
+  min & 0.02 & 0.09 & 0.06 & 0.06 & 0.28 \\ 
+  & (0.04) & (0.09) & (0.16) & (0.06) & (0.02) \\
+  vw & 0.15 & 0.10 & 0.14 & 0.15 & 0.15 \\ 
+  & (0.07) & (0.09) & (0.13) & (0.04) & (0.01) \\
+  mp & 0.25 & 0.40 & 0.11 & 0.16 & 0.18 \\
+  & (0.34) & (0.14) & (0.06) & (0.03) & (0.00) \\
+   \hline
+\end{tabular}
+\end{table}
+
+Each row in Table-(\ref{tab:table1}) corresponds to Sharpe ratios of different strategies with respect to different benchmarks. The 1/N strategy is is equally weighted portfolio with no estimation error. The second strategy (mean-variance) by construction has the highest Sharpe ratios (as per the original paper). The difference between the first and second strategies is the loss due to Naive strategy rather than portfolio diversification as there is no estimation error. The rest of the strategies are out-of-sample. The Sharpe ratios in them show how severe the sensitivity to estimation error is. The miniumum-variance strategy Sharpe ratios show that after considering only covariances and ignoring expected returns, there is not much improvement from 1/N strategy. However there is an improvement in value-weighted and Mackinlay and Pastor (2000) portfolio strategies. Also, we can observe that as the number of factors used as explantory variables increase, the Share ratios increase. The standard errors decrease from third column to fifth column as the number of factors increase. Also, standard errors for industry portfolios are smaller compared to those of S\&P sectoral portfolios.
+\clearpage
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    Paper-2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\cite{fama1992cross}} \label{sec:FF}
+
+\subsection{Introduction}
+ This paper tries to identify relevant factors that jointly explain stock and bond returns. The authors identify three stock-market factors namely firm size, book-to-market equity (value), and market factor; and two bond-market factors related to maturity and default risks of the bonds as the most important factors that explain the cross-section of average returns on stocks and bonds. This section replicates Table-9(a) of the original paper. The procedure of the analysis is as follows.
+
+\subsection{Data description}
+Returns data are extracted from Kenneth French website. It covers data from July 1963 to December 1991 on 25 Fama-French Size and Book-to-Market based
+portfolios. The factors SMB (small minus Big size), HML (high minus low Book-to-Market equity ratio) and Mkt-Rf (excess market return) factors are
+also extracted from Kenenth French website. Data for long-term government bond return and
+market portfolio of long-term corporate bonds are extracted from Ibbotson Associates. 
+
+\paragraph{} The proxy for common risk factors in bond returns which arise from unexpected change in interest rates (TERM) are extracted from Ibbotson Associates and Center for Research in Security Prices (CRSP). TERM factor is the difference between monthly long-term government bond return and one-month treasury bill rate of the previous month. The proxy for common risk factors in bond returns which arise from unexpected change in likelihood of default (DEF) are extracted from Ibbotson Associates and CRSP. DEF factor is difference between long-term corporate bond portfolio and long-term government bond return. All the fundamentals data are extracted from Compustat.
+
+\subsection{Methodology}
+
+In this replication of Table-9a of the original paper, 25 stock portfolios were formed based on size and book-to-market equity from July 1963 to December 191. Each year, at the end of June month, portfolios were formed and used for the analysis for the next one year. Below are the five regressions run in the analysis.
+
+\begin{equation}
+    R(t)-RF(t) = a +mTERM(t)+dDEF(t)+\epsilon(t)
+\end{equation}
+
+\begin{equation}
+R(t)-RF(t) = a +b[RM(t)-RF(t)]+\epsilon(t) 
+\end{equation}
+
+\begin{equation}
+R(t)-RF(t) = a +sSMB(t)+ hHML(t)+\epsilon(t) 
+\end{equation}
+
+\begin{equation}
+R(t)-RF(t) = a +b[RM(t)-RF(t)]+sSMB(t)+ hHML(t)+\epsilon(t) \end{equation}
+
+\begin{equation}
+R(t)-RF(t) = a +b[RM(t)-RF(t)]+sSMB(t)+ hHML(t)+mTERM(t)+dDEF(t)+\epsilon(t) 
+\end{equation}
+
+\subsection{Results}
+
+From the first regression, when we regress excess stock returns on TERM and DEF factors, the intercepts (abnormal excess returns/alpha) for the high value portfolios are significant which means that the bond risk factors do not explain the stock returns. Hence, there is a need for further investigation.
+
+\paragraph{} From the second regression, when we regress excess stock returns on excess market returns, there is a significant size effect i.e. for low B/M quantile intercepts increase as the size increases and value (B/M) effect i.e. as the B/M values increase, larger will be the intercept. The intercepts are significant for high value and small size stocks. This means excess market returns do not explain variation of such stock returns.
+
+\paragraph{} From the third regression, the intercepts when SMB and HML factors are used are larger and more significant than the second regression. This means that the two factors jointly explain worse than excess market factor alone.
+
+\paragraph{} From the fourth regression, when we include market excess return, SMB and HML factors, most of the intercepts become smaller and lose significance (only 4 out of 25 portfolio intercepts remain significant). This means that those three factors jointly explain excess stock returns very well.
+
+\paragraph{} From the fifth regression, when the bond factors (TERM and DEF) are added to the stock factors (market, HML, and SMB), the intercepts remain almost the same. This means there is no significant improvement over the fourth regression. Which implies that bond factors may not be explaining stock returns well.
+
+
+\begin{table}[H] 
+\centering
+\caption {: Intercepts from excess stock return regressions for 25 stock portfolios formed on size and book-to-market equity: July 1963 to December 1991, 342 months} \label{tab:table2} 
+
+\textbf{Book-to-market equity (BE/ME) quintiles}\\
+
+\begin{tabular}{ccccccccccc}
+\toprule 
+ 
+ \multicolumn{1}{c|}{\textbf{}}  & \multicolumn{5}{c|}{\textbf{a}} & \multicolumn{5}{c|}{\textbf{t(a)}}\\
+ \hline
+ Size Quantile &    Low  &  2  &  3 & 4 & High &  Low  &  2  &  3 & 4 & High \\ \midrule 
+    &  \multicolumn{10}{c}{\small{ (i) $R(t)-RF(t) = a +mTERM(t)+dDEF(t)+\epsilon(t)$}}\\
+Small   & 0.25 & 0.63 & 0.66 & 0.81 & 0.94 & 0.61 & 1.75& 2.03& 2.64 & 2.88 \\
+2   & 0.33 & 0.6&  0.79& 0.85 &0.93  & 0.87 & 1.84& 2.69 & 3.19 & 3.02 \\
+3   & 0.36 & 0.65 & 0.58 & 0.78 & 0.87 & 1.05 & 2.24& 2.25 & 3.22& 3.04 \\
+4   & 0.4  & 0.3 & 0.56 & 0.72 & 0.81 & 1.33 & 1.13 & 2.24 & 3.05 & 2.89 \\
+Big   & 0.32 & 0.29 & 0.29 & 0.47 & 0.47 & 1.32 & 1.23 & 1.37 & 2.2 & 1.95 \\ \\
+
+    & \multicolumn{10}{c}{\small{(ii) $R(t)-RF(t) = a +b[RM(t)-RF(t)]+\epsilon(t)$}}\\
+
+
+Small   & -0.27 & 0.17  & 0.25 & 0.43 & 0.55 & -1.21 & 0.86 & 1.38 & 2.46 & 2.76 \\
+2   & -0.19 & 0.15 & 0.39& 0.5 & 0.53 & -1.11 & 1.02 & 2.81 & 3.77 & 3.23 \\
+3   & -0.13 & 0.24 & 0.22 & 0.45 & 0.5 & -0.97 & 2.06 & 1.96 & 3.99 & 3.19 \\
+4   & -0.04 & -0.09 & 0.2 & 0.39 & 0.44 &-0.44 & -1.04 & 2.05 & 3.54 & 3 \\
+Big   & -0.04 & -0.06 & -0.01 & 0.18 & 0.17 & -0.39 & -0.84 & -0.09 & 1.71 & 1.2 \\ \\
+
+    &  \multicolumn{10}{c}{\small{(iii) $R(t)-RF(t) = a +sSMB(t)+ hHML(t)+\epsilon(t)$}}\\
+
+
+Small   & 0.15 & 0.4 & 0.4 & 0.51 & 0.53 & 0.56 & 1.73 & 1.8 & 2.45 & 2.38 \\
+2   & 0.41 & 0.49 & 0.62 & 0.64 & 0.59 & 1.58 & 2.06 & 2.78 & 2.83 & 2.4 \\
+3   & 0.51 & 0.62 & 0.47 & 0.62 & 0.58 & 1.97 & 2.59 & 2.06 & 2.71 & 2.28 \\
+4   & 0.65 & 0.38 & 0.53 & 0.6 & 0.61 & 2.59 & 1.51 & 2.17 & 2.47 & 2.17 \\
+Big   & 0.69 & 0.49 & 0.42 & 0.45 & 0.33 & 3.09 & 2.04 & 1.77 & 1.92 & 1.31 \\ \\
+
+    &  \multicolumn{10}{c}{\small{(iv) $R(t)-RF(t) = a +b[RM(t)-RF(t)]+sSMB(t)+ hHML(t)+\epsilon(t)$}}\\
+
+
+Small   & -0.37 & -0.09 & -0.07 & 0.06 & 0.06 &-3.45 & -1.09 & -1.1 & 1.01 & 0.88  \\
+2   & -0.14 & -0.02 & 0.14 & 0.15 & 0.06 & -1.68 & -0.25 & 2.02 & 2.49 & 0.84 \\
+3   & -0.05 & 0.11 & -0.01 & 0.13 & 0.05 & -0.61 & 1.49 & -0.19 & 1.95 & 0.67 \\
+4   & 0.11 & -0.15 & 0.01 & 0.09 & 0.03 &1.49 & -1.8 & 0.14 & 1.05 & 0.31 \\
+Big   & 0.21 & -0.02 & -0.06 & -0.05 & -0.18 & 3.01 & -0.3 & -0.61 & -0.74 & -1.65 \\ \\
+
+    &  \multicolumn{10}{c}{\small{ (v) $R(t)-RF(t) = a +b[RM(t)-RF(t)]+sSMB(t)+ hHML(t)+mTERM(t)+dDEF(t)+\epsilon(t)$}}\\
+
+Small   & -0.38 & -0.09 & -0.07 & 0.06 & 0.05 & -3.53 & -1.22 & -1.1& 0.98 & 0.83 \\
+2   & -0.14 & -0.02 & 0.14 & 0.16 & 0.05 &-1.76 & -0.27 & 2.03 & 2.66 & 0.79  \\
+3   & -0.05& 0.11 & -0.01 & 0.14 & 0.05 &-0.64 & 1.5 & -0.14 & 2.07 & 0.68  \\
+4   & 0.11 & -0.15 & 0.01& 0.09 &0.03  & 1.48 & -1.79 & 0.17 & 1.2& 0.33 \\
+Big   & 0.21 & -0.02 & -0.06 & -0.06 & -0.19 & 3.07 & -0.33 & -0.62 & -0.75 & -1.77 \\ \\
+
+\hline \\
+\end{tabular} 
+\end{table}  
+
+\clearpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    Paper-3
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\cite{balduzzi2008mimicking}} \label{sec:BR}
+
+\subsection{Introduction}
+ This paper compares the two formulations used to construct the linear factor model with non-traded factors. In the first method (LFM), the estimations of risk premia and alpha are based on a cross-sectional regression of average returns on betas. In the second method (LFM*), the estimations of risk premia and alphas were based on time-series regressions. The authors conclude that the second method should also be considered in addition or instead of just using the conventional methods. In this section, I replicate panel A of Table 1 from the original paper.  
+
+\subsection{Data description}
+The ten size-sorted stock portfolio (value-weighted (VW) NYSE-AMEX-NASDAQ decile portfolios) returns and one-month T-bill rate (proxy for risk-free rate) are extracted from Center for Research in Security Prices (CRSP), and log real per-capita  consumption growth (non-durable goods and services) and population data are extracted from Datastream. The time period of the data spans from March 1959 through November 2002, resulting in 525 time-series observations.  
+
+\subsection{Methodology and Results}
+
+Here, $z_{t}$ denote the data and $\theta$ the parameter vector. For LFM representation, the moment conditions, $E\left[f\left(z_{t}, \theta\right)\right]=0$ are given by
+
+\begin{equation}
+E\left(r_{t}-\beta_{0}-\beta^{\top} y_{t}\right) &=0 \end{equation}
+\begin{equation}
+E\left[\left(r_{t}-\beta_{0}-\beta^{\top} y_{t}\right) \otimes y_{t}\right] &=0 \end{equation}
+\begin{equation}
+E\left(r_{t}-\beta^{\top} \lambda\right) &=0
+\end{equation}
+
+The linear combination of the moment conditions equal to zero as per Hansen (1982), i.e. $a \hat{E}\left[f\left(z_{t}, \hat{\theta}\right)\right]=0,$ where
+$$
+a=\left[\begin{array}{cc}
+I_{N(K+1)} & 0_{N(K+1), N} \\
+0_{K, N(K+1)} & \hat{\beta} W
+\end{array}\right]
+$$
+Here, two weighting matrices are used for the analysis: $W=I$ and $W=\hat{\Sigma}_{c e}^{-1}$.
+The resulting $\lambda$ estimates are given by
+$$
+\hat{\lambda}=\left(\hat{\beta} W \hat{\beta}^{\top}\right)^{-1} \hat{\beta} W \hat{E}\left(r_{t}\right)
+$$
+For $W=\hat{\Sigma}_{e e}^{-1}$ (or $\left.W=\hat{\Sigma}_{r r}^{-1}\right),$ the resulting $\lambda$ estimates coincide with those of the optimal
+GMM estimator (in the iid case),
+$$
+a=\left.\frac{\partial \hat{E}\left[f\left(z_{t}, \theta\right)\right]^{\top}}{\partial \theta}\right|_{\theta=\theta} \hat{\Sigma}_{f f}^{-1}
+$$
+conditional on $\hat{\beta}$.
+
+
+\paragraph{} Here, we use a two-step method to estimate consumption risk premium. In the first step, we use time-series regressions to estimate betas for each portfolio. In the second step, we estimate the risk premium on the unit-beta portfolios using a cross-sectional regression (CSR) of average returns on the betas. We use two different weighting schemes to perform the CSR as per the original paper. The first and second columns of Table-\ref{tab:table3} show the results for the LFM formulations of the C-CAPM. The consumption risk premiums are 0.16 and significant in both OLS and GLS models using different weighting matrices.  
+We then use GMM to estimate chi-squared statistics. Consistent with the original paper, the chi-squared statistics from the GMM method show that the test of overidentifying restrictions leads to rejection of the C-CAPM.\\
+ 
+ 
+\begin{table}[H]  
+\centering
+\caption{: LFM representation} \label{tab:table3}
+\caption*{We estimate a C-CAPM economy. Parameter estimates of the LFM are obtained by cross-sectional regression, with W = I (OLS) and W = $\Sigma_{ee}^{-1}$ (GLS). Asymptotic standard errors and $\chi^{2}$ statistics are obtained by GMM, assuming no serial dependence. The sample is from 1959:03 to 2002:11. We consider the ten size portfolios as the test assets.}
+\caption*{Panel A - LFM} 
+\caption*{C-CAPM}
+
+\begin{tabular}{ccccc}
+\hline
+         & $\lambda_{OLS}$  & $\lambda_{GLS}$  & $\chi_{OLS}^{2}$  & $\chi_{GLS}^{2}$  \\
+\hline
+Estimate & 0.16  & 0.16  & 185.03 & 188.73 \\
+t-ratio  & 2.84  & 2.93  &        &        \\
+p-value  & 0.022 & 0.019 & 0.000  & 0.000 \\
+\hline
+\end{tabular}
+\end{table}
+
+\clearpage
+ 
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                    Paper-4
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\cite{hansen1997assessing}} \label{sec:HJ}
+
+\subsection{Introduction}
+ This paper compares the two formulations used to construct the linear factor model with non-traded factors. In the first method (LFM), the estimations of risk premia and alpha are based on a cross-sectional regression of average returns on betas. In the second method (LFM*), the estimations of risk premia and alphas were based on time-series regressions. The authors conclude that the second method should also be considered in addition or instead of just using the conventional methods. In this section, I replicate panel A of Table 1 from the original paper.  
+ 
+ 
+ \subsection{Data description}
+ This excercise is an updation of the original paper. Six portfolios were constructed spanning the period between January 1959 to December 2019. The first return series is the
+equally weighted portfolio of New York Stock Exchange (NYSE) stocks in the largest size decile; the second is an equally weighted portfolio of NYSE stocks in the smallest size decile; the third is a portfolio of long-term government bonds. The remaining three
+returns were constructed as "managed portfolios" in which 1-z units were
+invested in the one-month Treasury bill and z units were invested in the
+largest size decile portfolio. For the fourth return series, the portfolio weight z is the
+annual yield difference between Aaa and Baa bonds; for the fifth return, z is the annual yield difference between Baa bonds and the one-month Treasury
+bill; and for the last return, z is the annual yield difference between one-year
+and one-month Treasury bills. All the monthly return series on equal-weighted and value-weighted indices are extracted from CRSP; long-term bonds and treasury bills from Ibbotson Associates; yields on one-month and one-year treasury bills, AAA and BAA bonds from Federal Reserve Bank of St.Louis database. Per capita non-durables consumption data is extracted from Datastream.
+ 
+ \subsection{Methodology and Results}
+ 
+ The stochastic discount factor proxy is $\beta\left(c_{t+1} / c_{t}\right)^{-\gamma}\left(c_{e} / c_{t-1}\right)^{\gamma-1},$ where $\beta$ is the rate of time preference, $c_{t}$ is the per capita non-durables consumption for month $t,$ and $\gamma$ is the coefficient of relative risk aversion of the representative consumer. Nominal returns
+were deflated using the price deflator series for consumption of nondurables
+from Datastream. $\delta$ gives the least squares distances between the proxies and the family of stochastic discount factors.
+
+ \paragraph{} Considering an admissible pricing kernel $m$ (a pricing kernel that "works"). 
+\begin{equation}
+E(m) \equiv v=\frac{1}{R_{f}}
+\end{equation}
+
+where $R_{f}$ is the gross risk-free rate.\\
+Hansen and Jagannathan (1991) show that the kernel with minimum variance among all the admissible kernels has the form
+\begin{equation}
+m^{\star}=v+(R-\mu)^{\top} \delta
+\end{equation}
+where $R$ is the $N \times 1$ vector of gross risky-asset returns, and where $\delta$ equals
+\begin{equation}
+\delta=\Sigma^{-1}(1-v \mu)
+\end{equation}
+ 
+pricing error is given by
+\begin{equation}
+x^{\star}=m^{\star}-y^{\star}
+\end{equation}
+
+where
+$$
+\begin{aligned}
+y^{\star} &=E(y)+(R-\mu)^{\top} \Sigma^{-1} \Sigma_{R y} \\
+&=E(y)+(R-\mu)^{\top} \Sigma^{-1}[E(R y)-E(y) \mu] \\
+&=E(y)+(R-\mu)^{\top} \Sigma^{-1}(\delta-\eta)
+\end{aligned}
+$$
+is the least-squares projection of $y$ onto the augmented span of returns.
+
+Below are the vector forms to estimate $x^{\star}$ and Hansen-Jagannathan distance (HJD).
+\begin{equation}
+x^{\star}=m^{\star}-y^{\star}=\tilde{R}^{\top} E\left(\tilde{R} \tilde{R}^{\top}\right)^{-1}[\mathbf{1}-E(\tilde{R} y)]
+\end{equation}
+
+\begin{equation}
+\mathrm{HJD}=\sqrt{(1-E(\tilde{R} y))^{\top} E\left(\tilde{R} \tilde{R}^{\top}\right)^{-1}(1-E(\tilde{R} y))}
+\end{equation}
+
+ \paragraph{} We then calculate the $\chi^{2}$ statistics by applying GMM, following Hansen (1982). The degrees of freedom are equal to six because we have six test asset portfolios. Even though the $\chi^{2}$ statistics are volatile across different combinations of $\beta$ and $\gamma$, the corresponding p values are extremely small showing that the model is statistically significant. Same is the case with $\delta$ values. They are not very volatile across different values of $\beta$ and $\gamma$, and the standard errors are very small (statistically significant). Results are consistent with the original paper and show that we can reject the risk-neutral pricing based on the statistical evidence. 
+
+
+\begin{table}[H]
+\centering
+\caption{: Specification errors for power utility} \label{tab:table4}
+\caption*{The stochastic discount factor proxy is $\beta\left(c_{t+1} / c_{t}\right)^{-\gamma}\left(c_{e} / c_{t-1}\right)^{\gamma-1},$ where $\beta$ is the rate of time preference, $c_{t}$ is the per capita non-durables consumption for month $t,$ and $\gamma$ is the coefficient of relative risk aversion of the representative consumer.  The column labeled $\delta$ gives the least squares distances between the proxies and the family of stochastic discount factors. The column labeled $\chi^{2}$ gives the chi-square test statistics for the null hypothesis that all pricing errors are zero. Numbers in parentheses are estimated standard errors. The standard errors are computed using the method described in Newey and West (1987) with $m=15$. The entries in the row labeled "minimized" are computed by selecting parameter values for $\beta$ and $\gamma$ that minimize the corresponding criteria. In the column labeled $\delta$ the minimizers are $\beta=0.998$ and $\gamma=7.3 ;$ and in the column labelled $\chi^{2}$ the minimizers are $\beta=21.1$ and $\gamma=237.6$}
+
+\begin{tabular}{ccccc}
+\toprule
+$\gamma$  &           & $\delta$ & $\chi^{2}$ &  \\
+\hline
+& \multicolumn{4}{c}{ beta=0.95 } \\
+\hline
+0      &           & 0.25  & 59.43       &  \\
+ &           & (0.05)  &             &  \\
+1      &           & 0.25  & 48.44       &  \\
+ &           & (0.05)  &             &  \\
+5      &           & 0.24  & 94.56       &  \\
+ &           & (0.05)  &             &  \\
+10     &           & 0.24  & 354.89      &  \\
+ &           & (0.05)  &             &  \\
+15     &           & 0.24  & 840.41      &  \\
+ &           & (0.05)  &             &  \\
+ 
+\hline
+      & \multicolumn{4}{c}{ beta=1}  \\
+\hline
+0      &           & 0.26  & 71.65       &  \\
+ &           & (0.05)  &             &  \\
+1      &           & 0.26  & 51.83       &  \\
+ &           & (0.05)  &             &  \\
+5      &           & 0.25  & 62.61       &  \\
+ &           & (0.05)  &             &  \\
+10     &           & 0.25  & 278.76      &  \\
+ &           & (0.05)  &             &  \\
+15     &           & 0.25  & 720.11      &  \\
+ &           & (0.05)  &             & \\
+\bottomrule
+\end{tabular}
+\end{table}
+\clearpage
+
+
+% Bibliography.
+\section{References}
+\begin{doublespacing}   % Double-space the bibliography
+\bibliographystyle{jf}
+\bibliography{bibliography}
+\end{doublespacing}
+
+\end{document}
+
